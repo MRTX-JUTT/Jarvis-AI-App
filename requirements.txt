@@ -1,5 +1,0 @@
-kivy
-cython
-speechrecognition
-gTTS
-pyjnius
