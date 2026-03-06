@@ -7,22 +7,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Get Date
-        id: get-date
-        run: |
-          echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
-
-      - name: Cache Buildozer
-        uses: actions/cache@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-${{ steps.get-date.outputs.date }}
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          # تصویر 10221da3 کے مطابق cython3 انسٹال کریں
+          sudo apt-get install -y python3-pip cython3 libffi-dev 
+          pip install --upgrade pip
+          # مخصوص ورژن جو Kivy 2.3.0 کے ساتھ کام کرتا ہے
+          pip install Cython==0.29.33 
+          pip install buildozer
 
       - name: Build with Buildozer
-        # یہ ایکشن بہت زیادہ مستحکم ہے
-        uses: ArtemSerebrennikov/buildozer-action@v1
-        with:
-          buildozer_version: master
-          command: buildozer android debug
-          # یہاں ہم لائسنس خودکار طور پر قبول کر رہے ہیں
-          repository_display_name: Jarvis-AI
+        # اب ہم کسی ایکشن پر منحصر نہیں، براہ راست کمانڈ چلائیں گے
+        run: |
+          yes | buildozer android debug
