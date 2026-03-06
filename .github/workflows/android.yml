@@ -15,19 +15,19 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev 
+          # یہاں ہم libtool اور m4 شامل کر رہے ہیں جو اس ایرر کو ختم کریں گے
+          sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev m4
           pip install --upgrade pip
           pip install "Cython<3.0" 
           pip install buildozer setuptools
 
-      - name: Auto-Accept Android SDK Licenses
+      - name: Fix Libtool Macro Error
         run: |
-          # یہ کمانڈ تمام اینڈرائیڈ لائسنسز کو خود بخود قبول کر لے گی
-          mkdir -p $HOME/.android
-          touch $HOME/.android/repositories.cfg
-          yes | sdkmanager --licenses || true
+          # یہ کمانڈ ان میکروز کو لنک کرے گی جو غائب ہیں
+          sudo ln -s /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 || true
+          sudo ln -s /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 || true
+          sudo ln -s /usr/share/aclocal/lt~obsolete.m4 /usr/share/aclocal/lt~obsolete.m4 || true
 
       - name: Build with Buildozer
         run: |
-          # اب بلڈوزر بغیر کسی سوال کے ٹولز ڈاؤن لوڈ کرے گا
           yes | buildozer android debug
