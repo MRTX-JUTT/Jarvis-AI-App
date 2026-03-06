@@ -7,7 +7,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build with Buildozer
-        # یہاں اسپیلنگ پر غور کریں: Artem Serebrennikov (ڈبل n اور پھر i)
         uses: ArtemSerebrennikov/buildozer-action@v1
         with:
           buildozer_version: master
