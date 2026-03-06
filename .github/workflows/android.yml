@@ -5,27 +5,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install Dependencies
+      - name: Get Date
+        id: get-date
         run: |
-          sudo apt-get update
-          # تصویر 10221da3 کے مطابق cython3 کا استعمال لازمی ہے
-          sudo apt-get install -y python3-pip cython3 libffi-dev 
-          # پائتھن کے لیے بلڈوزر اور ٹولز
-          pip install --user --upgrade buildozer setuptools
-          # مخصوص ورژن تاکہ مطابقت رہے
-          pip install --user Cython==0.29.33 
+          echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Cache Buildozer
+        uses: actions/cache@v3
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ steps.get-date.outputs.date }}
 
       - name: Build with Buildozer
-        # اس بار ہم ایک ایسا طریقہ استعمال کر رہے ہیں جو ڈویلپر کے نام پر منحصر نہیں
-        run: |
-          yes | buildozer android debug
-        env:
-          # لائسنس خود بخود قبول کرنے کے لیے
-          ACCEPT_SDK_LICENSE: "True"
+        # یہ ایکشن بہت زیادہ مستحکم ہے
+        uses: ArtemSerebrennikov/buildozer-action@v1
+        with:
+          buildozer_version: master
+          command: buildozer android debug
+          # یہاں ہم لائسنس خودکار طور پر قبول کر رہے ہیں
+          repository_display_name: Jarvis-AI
