@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, kivy, android, pyjnius, speechrecognition, gtts
+requirements = python3, kivy==2.3.0, android, pyjnius, speechrecognition, gtts, setuptools
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -110,7 +110,7 @@ fullscreen = 0
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 23b
+#android.ndk = 25b
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 #android.ndk_api = 21
@@ -451,6 +451,7 @@ warn_on_root = 1
 #
 
 #buildozer --profile demo android debug
+
 
 
 
