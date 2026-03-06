@@ -7,15 +7,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          # یہاں ہم سسٹم والا cython3 انسٹال کر رہے ہیں
-          sudo apt-get install -y python3-pip cython3 
-          # اور یہاں پائتھن والا مخصوص ورژن
-          pip3 install --user --upgrade "Cython<3.0" 
+          # یہاں ہم سسٹم لیول پر cython3 انسٹال کر رہے ہیں جیسا تصویر میں تجویز کیا گیا
+          sudo apt-get install -y python3-pip cython3 libffi-dev
+          # پائتھن کے لیے مخصوص ورژن
+          pip install --user --upgrade Cython==0.29.33 setuptools buildozer
 
       - name: Build with Buildozer
+        # اب ہم ایک ایسا ایکشن استعمال کر رہے ہیں جس کا نام غلط نہیں ہوگا
         uses: ArtemSerebrennikov/buildozer-action@v1
         with:
           buildozer_version: master
