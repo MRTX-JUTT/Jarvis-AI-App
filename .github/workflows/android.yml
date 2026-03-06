@@ -6,8 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build with Buildozer
-        uses: ArtemSerebrennikov/buildozer-action@v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          buildozer_version: master
-          command: buildozer android debug
+          python-version: '3.11'
+
+      - name: Install Buildozer and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-setuptools python3-dev python3-virtualenv git zip unzip openjdk-17-jdk
+          pip install --upgrade pip setuptools buildozer
+
+      - name: Build APK
+        run: buildozer android debug
