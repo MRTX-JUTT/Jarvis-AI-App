@@ -12,14 +12,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+- name: Install Dependencies
         run: |
           sudo apt-get update
-          # تصویر 10221da3 کے مطابق cython3 انسٹال کریں
+          # یہاں ہم سسٹم والا cython3 اور ضروری ٹولز ڈال رہے ہیں
           sudo apt-get install -y python3-pip cython3 libffi-dev 
           pip install --upgrade pip
-          # مخصوص ورژن جو Kivy 2.3.0 کے ساتھ کام کرتا ہے
-          pip install Cython==0.29.33 
+          # پائتھن کے لیے مخصوص مستحکم ورژن
+          pip install "Cython<3.0" 
           pip install buildozer
 
       - name: Build with Buildozer
