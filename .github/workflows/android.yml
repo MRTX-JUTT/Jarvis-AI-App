@@ -3,26 +3,31 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # ہم نے ورژن 22.04 پر فکس کر دیا ہے کیونکہ یہ زیادہ مستحکم ہے
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # اینڈرائیڈ بلڈ کے لیے 3.9 سب سے بہترین ہے
+          python-version: '3.10'
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev libssl-dev
+          sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev 
           pip install --upgrade pip
           pip install "Cython<3.0" 
           pip install buildozer setuptools
 
+      - name: Auto-Accept Android SDK Licenses
+        run: |
+          # یہ کمانڈ تمام اینڈرائیڈ لائسنسز کو خود بخود قبول کر لے گی
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          yes | sdkmanager --licenses || true
+
       - name: Build with Buildozer
         run: |
-          # ہم لاگ لیول 2 استعمال کر رہے ہیں تاکہ اصل غلطی نظر آئے
-          buildozer android debug || buildozer android debug log_level=2
-        env:
-          ACCEPT_SDK_LICENSE: "True"
+          # اب بلڈوزر بغیر کسی سوال کے ٹولز ڈاؤن لوڈ کرے گا
+          yes | buildozer android debug
