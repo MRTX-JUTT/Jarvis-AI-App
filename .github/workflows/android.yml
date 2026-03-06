@@ -10,19 +10,22 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          # یہاں ہم سسٹم لیول پر cython3 انسٹال کر رہے ہیں جیسا تصویر میں تجویز کیا گیا
-          sudo apt-get install -y python3-pip cython3 libffi-dev
-          # پائتھن کے لیے مخصوص ورژن
-          pip install --user --upgrade Cython==0.29.33 setuptools buildozer
+          # تصویر 10221da3 کے مطابق cython3 کا استعمال لازمی ہے
+          sudo apt-get install -y python3-pip cython3 libffi-dev 
+          # پائتھن کے لیے بلڈوزر اور ٹولز
+          pip install --user --upgrade buildozer setuptools
+          # مخصوص ورژن تاکہ مطابقت رہے
+          pip install --user Cython==0.29.33 
 
       - name: Build with Buildozer
-        # اب ہم ایک ایسا ایکشن استعمال کر رہے ہیں جس کا نام غلط نہیں ہوگا
-        uses: ArtemSerebrennikov/buildozer-action@v1
-        with:
-          buildozer_version: master
-          command: buildozer android debug
+        # اس بار ہم ایک ایسا طریقہ استعمال کر رہے ہیں جو ڈویلپر کے نام پر منحصر نہیں
+        run: |
+          yes | buildozer android debug
+        env:
+          # لائسنس خود بخود قبول کرنے کے لیے
+          ACCEPT_SDK_LICENSE: "True"
