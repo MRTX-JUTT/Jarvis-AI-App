@@ -1,5 +1,5 @@
 name: Build Android APK
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -12,18 +12,16 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          # سسٹم لیول پر ضروری لائبریریز (تصویر 10221da3 کے مطابق)
-          sudo apt-get install -y python3-pip cython3 libffi-dev 
+          # آٹو کنف اور دیگر بلڈ ٹولز جو ایرر ختم کریں گے
+          sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev 
           pip install --upgrade pip
-          # مخصوص ورژن جو Kivy کے ساتھ مستحکم ہے
           pip install "Cython<3.0" 
           pip install buildozer setuptools
 
       - name: Build with Buildozer
-        # ہم براہ راست کمانڈ چلا رہے ہیں تاکہ کسی ایکشن کی اسپیلنگ کا مسئلہ نہ آئے
         run: |
-          # اینڈرائیڈ SDK لائسنس خودکار قبول کرنے کے لیے
+          # اینڈرائیڈ بلڈ شروع کریں
           yes | buildozer android debug
