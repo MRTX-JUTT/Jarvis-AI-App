@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = My Application
+title = JARVIS AI
 
 # (str) Package name
-package.name = myapp
+package.name = jarvis
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -451,6 +451,7 @@ warn_on_root = 1
 #
 
 #buildozer --profile demo android debug
+
 
 
 
