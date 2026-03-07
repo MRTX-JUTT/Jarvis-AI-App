@@ -10,7 +10,7 @@ from kivy.core.audio import SoundLoader
 import speech_recognition as sr
 from gtts import gTTS
 
-# اینڈرائیڈ کی مخصوص لائبریریز
+# Android specific permissions logic
 try:
     from jnius import autoclass
     from android.permissions import request_permissions, Permission
@@ -18,7 +18,7 @@ try:
 except ImportError:
     ANDROID = False
 
-# آپ کی تمام ایپس کی لسٹ
+# Aapki saari apps yahan hain
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -50,7 +50,7 @@ apps_dictionary = {
 
 class JarvisAI(App):
     def build(self):
-        # ایپ کھلتے ہی مائیکروفون کی اجازت مانگنا
+        # App khulye hi permission mangne ka code
         if ANDROID:
             request_permissions([
                 Permission.RECORD_AUDIO, 
@@ -63,9 +63,72 @@ class JarvisAI(App):
             text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS[/color]", 
             font_size='26sp', markup=True, halign='center'
         )
-      self.btn = Button(
-            text="ACTIVATE", 
-            size_hint=(1, 0.4),
-            background_color=(0, 0.7, 0.9, 1),
-            font_size='22sp'
+        self.btn = Button(
+            text="ACTIVATE", size_hint=(1, 0.4),
+            background_color=(0, 0.7, 0.9, 1), font_size='22sp'
         )
+        self.btn.bind(on_press=self.start_thread)
+        self.layout.add_widget(self.label)
+        self.layout.add_widget(self.btn)
+        return self.layout
+
+    def speak(self, text):
+        try:
+            tts = gTTS(text=text, lang='en')
+            # Android device par file save karne ka path
+            filename = os.path.join(self.user_data_dir, "voice.mp3")
+            tts.save(filename)
+            sound = SoundLoader.load(filename)
+            if sound:
+                sound.play()
+        except Exception as e:
+            print(f"Speak Error: {e}")
+
+    def start_thread(self, instance):
+        # Threading taaki UI freeze na ho
+        threading.Thread(target=self.run_jarvis).start()
+
+    def open_app(self, package_name):
+        if ANDROID:
+            try:
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                currentActivity = PythonActivity.mActivity
+                pm = currentActivity.getPackageManager()
+                intent = pm.getLaunchIntentForPackage(package_name)
+                if intent:
+                    currentActivity.startActivity(intent)
+                    return True
+            except Exception as e:
+                print(f"Open App Error: {e}")
+        return False
+
+    def run_jarvis(self):
+        r = sr.Recognizer()
+        try:
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source, duration=1)
+                Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
+                audio = r.listen(source, timeout=5, phrase_time_limit=5)
+
+            query = r.recognize_google(audio).lower()
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"You said:\n{query}"))
+
+            app_found = False
+            for app_name, package in apps_dictionary.items():
+                if app_name in query:
+                    self.speak(f"Opening {app_name}, Sir")
+                    self.open_app(package)
+                    app_found = True
+                    break
+            
+            if not app_found:
+                self.speak("Searching for your request")
+                webbrowser.open(f"https://www.google.com/search?q={query}")
+        except Exception as e:
+            # Error handling for microphone or syntax
+            error_msg = "Mic Error" if "PyAudio" in str(e) else str(e)
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"Status: {error_msg}"))
+            self.speak("Sorry Sir, please check the connection.")
+
+if __name__ == '__main__':
+    JarvisAI().run()
