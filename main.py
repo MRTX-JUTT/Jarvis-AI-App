@@ -1,25 +1,24 @@
 import threading
+import os
+import webbrowser
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.clock import Clock
-from kivy.core.audio import SoundLoader  # Pygame کی جگہ یہ استعمال کریں
+from kivy.core.audio import SoundLoader 
 import speech_recognition as sr
 from gtts import gTTS
-import os
-import webbrowser
 
-# Android Permissions (مائیکروفون اور فائل کے لیے ضروری)
-from android.permissions import request_permissions, Permission
-
-# Android specific interaction
+# Android specific imports
 try:
     from jnius import autoclass
+    from android.permissions import request_permissions, Permission
     ANDROID = True
-except:
+except ImportError:
     ANDROID = False
 
+# Aapki batayi hui saari apps yahan add kar di hain
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -51,7 +50,6 @@ apps_dictionary = {
 
 class JarvisAI(App):
     def build(self):
-        # مائیکروفون کی اجازت مانگنا
         if ANDROID:
             request_permissions([Permission.RECORD_AUDIO, Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE])
 
@@ -70,13 +68,10 @@ class JarvisAI(App):
         return self.layout
 
     def speak(self, text):
-        print(f"Jarvis: {text}")
         try:
             tts = gTTS(text=text, lang='en')
             filename = os.path.join(self.user_data_dir, "voice.mp3")
             tts.save(filename)
-            
-            # Kivy SoundLoader استعمال ہو رہا ہے
             sound = SoundLoader.load(filename)
             if sound:
                 sound.play()
@@ -104,8 +99,9 @@ class JarvisAI(App):
         r = sr.Recognizer()
         try:
             with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source, duration=1)
                 Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
-                audio = r.listen(source, timeout=5)
+                audio = r.listen(source, timeout=5, phrase_time_limit=5)
 
             query = r.recognize_google(audio).lower()
             Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"You said:\n{query}"))
@@ -121,9 +117,9 @@ class JarvisAI(App):
             if not app_found:
                 self.speak("Searching for your request")
                 webbrowser.open(f"https://www.google.com/search?q={query}")
-        except:
+        except Exception as e:
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"Error: {str(e)}"))
             self.speak("Sorry Sir, I couldn't hear you clearly.")
 
 if __name__ == '__main__':
-    # یہاں آپ کی پرانی غلطی تھی، اب یہ ٹھیک ہے:
     JarvisAI().run()
