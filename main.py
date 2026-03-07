@@ -63,5 +63,9 @@ class JarvisAI(App):
             text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS[/color]", 
             font_size='26sp', markup=True, halign='center'
         )
-        self.btn = Button(
-            text="ACTIVATE", size
+      self.btn = Button(
+            text="ACTIVATE", 
+            size_hint=(1, 0.4),
+            background_color=(0, 0.7, 0.9, 1),
+            font_size='22sp'
+        )
