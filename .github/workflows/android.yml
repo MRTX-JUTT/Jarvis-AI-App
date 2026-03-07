@@ -1,5 +1,5 @@
 name: Build Android APK
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -15,6 +15,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
+          # تمام ضروری ٹولز جو ہم نے پچھلے ایررز میں ٹھیک کیے
           sudo apt-get install -y autoconf automake libtool pkg-config python3-pip cython3 libffi-dev m4 libltdl-dev
           pip install --upgrade pip
           pip install "Cython<3.0" 
@@ -22,11 +23,24 @@ jobs:
 
       - name: Force Link Libtool Macros
         run: |
-          # یہ حصہ اس LT_SYS_SYMBOL_USCORE والے ایرر کو جڑ سے ختم کرے گا
-          sudo cp /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 /usr/share/aclocal/lt~obsolete.m4 .
-          echo "AC_CONFIG_MACRO_DIRS([.])" >> configure.ac || true
+          # LT_SYS_SYMBOL_USCORE ایرر کا حل
+          sudo cp /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 /usr/share/aclocal/lt~obsolete.m4 . || true
+
+      - name: Auto-Accept Android SDK Licenses
+        run: |
+          # لائسنس والا مسئلہ ختم کرنے کے لیے
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          yes | sdkmanager --licenses || true
 
       - name: Build with Buildozer
         run: |
-          # اب ہم لائسنس خودکار قبول کر کے بلڈ شروع کریں گے
+          # اصل بلڈ کا عمل
           yes | buildozer android debug
+
+      - name: Upload APK Artifact
+        # یہ وہ سٹیپ ہے جو APK فائل کو ڈاؤن لوڈ کے لیے سامنے لائے گا
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-AI-Final-APK
+          path: bin/*.apk
