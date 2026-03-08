@@ -1,14 +1,14 @@
 import threading
 import os
 import webbrowser
+import time
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.clock import Clock
-import speech_recognition as sr
 
-# Android specific imports for Permissions and Male Voice
+# Android specific imports
 try:
     from jnius import autoclass
     from android.permissions import request_permissions, Permission
@@ -16,7 +16,8 @@ try:
 except ImportError:
     ANDROID = False
 
-# Aapki Tamam Apps ki List
+import speech_recognition as sr
+
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -49,7 +50,6 @@ apps_dictionary = {
 class JarvisAI(App):
     def build(self):
         if ANDROID:
-            # Requesting all necessary permissions
             request_permissions([
                 Permission.RECORD_AUDIO, 
                 Permission.INTERNET,
@@ -57,13 +57,13 @@ class JarvisAI(App):
                 Permission.WRITE_EXTERNAL_STORAGE, 
                 Permission.READ_EXTERNAL_STORAGE
             ])
-            # Setup Android Native TTS (Uses phone's Male/Female setting)
+            # Setup Native TTS for Male Voice
             TextToSpeech = autoclass('android.speech.tts.TextToSpeech')
             self.tts = TextToSpeech(autoclass('org.kivy.android.PythonActivity').mActivity, None)
 
         self.layout = BoxLayout(orientation='vertical', padding=40, spacing=25)
         self.label = Label(
-            text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS SIR[/color]", 
+            text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS[/color]", 
             font_size='26sp', markup=True, halign='center'
         )
         self.btn = Button(
@@ -77,7 +77,6 @@ class JarvisAI(App):
 
     def speak(self, text):
         if ANDROID:
-            # This will use the Male voice if set in Android Settings
             self.tts.speak(text, autoclass('android.speech.tts.TextToSpeech').QUEUE_FLUSH, None, None)
         else:
             print(f"JARVIS: {text}")
@@ -96,19 +95,24 @@ class JarvisAI(App):
                     currentActivity.startActivity(intent)
                     return True
             except Exception as e:
-                print(f"Error opening app: {e}")
+                print(f"Error: {e}")
         return False
 
     def run_jarvis(self):
         r = sr.Recognizer()
+        # Mic parameters adjust for Android
+        r.energy_threshold = 300
         r.dynamic_energy_threshold = True
-        
+
         try:
+            # FIX: Adding a small sleep before opening microphone
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "INITIALIZING MIC..."))
+            time.sleep(1) 
+
             with sr.Microphone() as source:
-                # Improving mic initialization
-                r.adjust_for_ambient_noise(source, duration=1.2)
+                r.adjust_for_ambient_noise(source, duration=1)
                 Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
-                audio = r.listen(source, timeout=6, phrase_time_limit=5)
+                audio = r.listen(source, timeout=8, phrase_time_limit=6)
 
             query = r.recognize_google(audio).lower()
             Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"You said:\n{query}"))
@@ -122,15 +126,13 @@ class JarvisAI(App):
                     break
             
             if not app_found:
-                if "hello" in query:
-                    self.speak("Hello Sir Mahad, I am online and ready.")
-                else:
-                    self.speak("Searching for your request, Sir")
-                    webbrowser.open(f"https://www.google.com/search?q={query}")
+                self.speak("Searching for your request")
+                webbrowser.open(f"https://www.google.com/search?q={query}")
 
         except Exception as e:
-            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: Mic Initializing..."))
-            self.speak("I am having trouble with the connection, Sir.")
+            # Display exact error for debugging
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"Error: {str(e)[:20]}"))
+            self.speak("Mic access denied or timed out.")
 
 if __name__ == '__main__':
     JarvisAI().run()
