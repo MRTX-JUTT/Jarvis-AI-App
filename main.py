@@ -6,10 +6,9 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.clock import Clock
-from kivy.core.audio import SoundLoader 
 import speech_recognition as sr
-from gtts import gTTS
 
+# Android specific imports for Permissions and Male Voice
 try:
     from jnius import autoclass
     from android.permissions import request_permissions, Permission
@@ -17,6 +16,7 @@ try:
 except ImportError:
     ANDROID = False
 
+# Aapki Tamam Apps ki List
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -49,15 +49,21 @@ apps_dictionary = {
 class JarvisAI(App):
     def build(self):
         if ANDROID:
+            # Requesting all necessary permissions
             request_permissions([
                 Permission.RECORD_AUDIO, 
+                Permission.INTERNET,
+                Permission.ACCESS_NETWORK_STATE,
                 Permission.WRITE_EXTERNAL_STORAGE, 
                 Permission.READ_EXTERNAL_STORAGE
             ])
+            # Setup Android Native TTS (Uses phone's Male/Female setting)
+            TextToSpeech = autoclass('android.speech.tts.TextToSpeech')
+            self.tts = TextToSpeech(autoclass('org.kivy.android.PythonActivity').mActivity, None)
 
         self.layout = BoxLayout(orientation='vertical', padding=40, spacing=25)
         self.label = Label(
-            text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS[/color]", 
+            text="[b]JARVIS[/b]\n[color=00ffff]READY FOR COMMANDS SIR[/color]", 
             font_size='26sp', markup=True, halign='center'
         )
         self.btn = Button(
@@ -70,16 +76,11 @@ class JarvisAI(App):
         return self.layout
 
     def speak(self, text):
-        # Note: gTTS doesn't support male voice easily on Android without heavy libraries
-        try:
-            tts = gTTS(text=text, lang='en', slow=False)
-            filename = os.path.join(self.user_data_dir, "voice.mp3")
-            tts.save(filename)
-            sound = SoundLoader.load(filename)
-            if sound:
-                sound.play()
-        except Exception as e:
-            print(f"Speak Error: {e}")
+        if ANDROID:
+            # This will use the Male voice if set in Android Settings
+            self.tts.speak(text, autoclass('android.speech.tts.TextToSpeech').QUEUE_FLUSH, None, None)
+        else:
+            print(f"JARVIS: {text}")
 
     def start_thread(self, instance):
         threading.Thread(target=self.run_jarvis).start()
@@ -95,21 +96,19 @@ class JarvisAI(App):
                     currentActivity.startActivity(intent)
                     return True
             except Exception as e:
-                print(f"Open App Error: {e}")
+                print(f"Error opening app: {e}")
         return False
 
     def run_jarvis(self):
         r = sr.Recognizer()
-        # Mic sensitivity settings to avoid error
-        r.dynamic_energy_threshold = True 
-        r.energy_threshold = 4000 
+        r.dynamic_energy_threshold = True
         
         try:
             with sr.Microphone() as source:
-                # Connection error fix: longer adjustment time
-                r.adjust_for_ambient_noise(source, duration=1.5)
+                # Improving mic initialization
+                r.adjust_for_ambient_noise(source, duration=1.2)
                 Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
-                audio = r.listen(source, timeout=7, phrase_time_limit=5)
+                audio = r.listen(source, timeout=6, phrase_time_limit=5)
 
             query = r.recognize_google(audio).lower()
             Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"You said:\n{query}"))
@@ -117,22 +116,21 @@ class JarvisAI(App):
             app_found = False
             for app_name, package in apps_dictionary.items():
                 if app_name in query:
-                    self.speak(f"Opening {app_name}")
+                    self.speak(f"Opening {app_name}, Sir")
                     self.open_app(package)
                     app_found = True
                     break
             
             if not app_found:
-                self.speak("Searching Google for you")
-                webbrowser.open(f"https://www.google.com/search?q={query}")
-        except sr.UnknownValueError:
-            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: Could not understand audio"))
-        except sr.RequestError:
-            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: No Internet Connection"))
-            self.speak("Sir, please check your internet connection")
+                if "hello" in query:
+                    self.speak("Hello Sir Mahad, I am online and ready.")
+                else:
+                    self.speak("Searching for your request, Sir")
+                    webbrowser.open(f"https://www.google.com/search?q={query}")
+
         except Exception as e:
             Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: Mic Initializing..."))
-            print(f"Detail Error: {e}")
+            self.speak("I am having trouble with the connection, Sir.")
 
 if __name__ == '__main__':
     JarvisAI().run()
