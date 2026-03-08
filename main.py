@@ -10,7 +10,7 @@ from kivy.core.audio import SoundLoader
 import speech_recognition as sr
 from gtts import gTTS
 
-# Android specific permissions logic
+# Android specific imports for permissions
 try:
     from jnius import autoclass
     from android.permissions import request_permissions, Permission
@@ -18,7 +18,7 @@ try:
 except ImportError:
     ANDROID = False
 
-# Aapki saari apps yahan hain
+# Aapki batayi hui saari apps ki list
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -50,7 +50,7 @@ apps_dictionary = {
 
 class JarvisAI(App):
     def build(self):
-        # App khulye hi permission mangne ka code
+        # App khulye hi microphone aur storage ki permission mangna
         if ANDROID:
             request_permissions([
                 Permission.RECORD_AUDIO, 
@@ -75,7 +75,6 @@ class JarvisAI(App):
     def speak(self, text):
         try:
             tts = gTTS(text=text, lang='en')
-            # Android device par file save karne ka path
             filename = os.path.join(self.user_data_dir, "voice.mp3")
             tts.save(filename)
             sound = SoundLoader.load(filename)
@@ -85,7 +84,6 @@ class JarvisAI(App):
             print(f"Speak Error: {e}")
 
     def start_thread(self, instance):
-        # Threading taaki UI freeze na ho
         threading.Thread(target=self.run_jarvis).start()
 
     def open_app(self, package_name):
@@ -106,6 +104,7 @@ class JarvisAI(App):
         r = sr.Recognizer()
         try:
             with sr.Microphone() as source:
+                # Noise adjust karna taake error kam aayein
                 r.adjust_for_ambient_noise(source, duration=1)
                 Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
                 audio = r.listen(source, timeout=5, phrase_time_limit=5)
@@ -125,10 +124,10 @@ class JarvisAI(App):
                 self.speak("Searching for your request")
                 webbrowser.open(f"https://www.google.com/search?q={query}")
         except Exception as e:
-            # Error handling for microphone or syntax
-            error_msg = "Mic Error" if "PyAudio" in str(e) else str(e)
-            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"Status: {error_msg}"))
-            self.speak("Sorry Sir, please check the connection.")
+            # Agar mic nahi mil raha to user ko wazeh batana
+            msg = "Mic Error: Check Permissions" if "PyAudio" in str(e) else "Could not hear you"
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"Status: {msg}"))
+            self.speak("Please check your microphone settings.")
 
 if __name__ == '__main__':
     JarvisAI().run()
