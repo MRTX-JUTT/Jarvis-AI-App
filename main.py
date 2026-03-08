@@ -10,7 +10,6 @@ from kivy.core.audio import SoundLoader
 import speech_recognition as sr
 from gtts import gTTS
 
-# Android specific permissions logic
 try:
     from jnius import autoclass
     from android.permissions import request_permissions, Permission
@@ -18,7 +17,6 @@ try:
 except ImportError:
     ANDROID = False
 
-# Apps List
 apps_dictionary = {
     "whatsapp": "com.whatsapp",
     "easypaisa": "inc.fss.mwallet",
@@ -50,7 +48,6 @@ apps_dictionary = {
 
 class JarvisAI(App):
     def build(self):
-        # App start hote hi permissions mangna
         if ANDROID:
             request_permissions([
                 Permission.RECORD_AUDIO, 
@@ -73,9 +70,9 @@ class JarvisAI(App):
         return self.layout
 
     def speak(self, text):
+        # Note: gTTS doesn't support male voice easily on Android without heavy libraries
         try:
-            tts = gTTS(text=text, lang='en')
-            # Android directory for saving temp voice file
+            tts = gTTS(text=text, lang='en', slow=False)
             filename = os.path.join(self.user_data_dir, "voice.mp3")
             tts.save(filename)
             sound = SoundLoader.load(filename)
@@ -103,12 +100,16 @@ class JarvisAI(App):
 
     def run_jarvis(self):
         r = sr.Recognizer()
+        # Mic sensitivity settings to avoid error
+        r.dynamic_energy_threshold = True 
+        r.energy_threshold = 4000 
+        
         try:
             with sr.Microphone() as source:
-                # Background noise ko balance karna taake mic error na de
-                r.adjust_for_ambient_noise(source, duration=1)
+                # Connection error fix: longer adjustment time
+                r.adjust_for_ambient_noise(source, duration=1.5)
                 Clock.schedule_once(lambda dt: setattr(self.label, 'text', "LISTENING..."))
-                audio = r.listen(source, timeout=5, phrase_time_limit=5)
+                audio = r.listen(source, timeout=7, phrase_time_limit=5)
 
             query = r.recognize_google(audio).lower()
             Clock.schedule_once(lambda dt: setattr(self.label, 'text', f"You said:\n{query}"))
@@ -116,24 +117,22 @@ class JarvisAI(App):
             app_found = False
             for app_name, package in apps_dictionary.items():
                 if app_name in query:
-                    self.speak(f"Opening {app_name}, Sir")
+                    self.speak(f"Opening {app_name}")
                     self.open_app(package)
                     app_found = True
                     break
             
             if not app_found:
-                self.speak("Searching for your request")
+                self.speak("Searching Google for you")
                 webbrowser.open(f"https://www.google.com/search?q={query}")
+        except sr.UnknownValueError:
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: Could not understand audio"))
+        except sr.RequestError:
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: No Internet Connection"))
+            self.speak("Sir, please check your internet connection")
         except Exception as e:
-            # Wazeh error handling
-            error_msg = str(e)
-            if "PyAudio" in error_msg:
-                final_status = "Mic Error: Check Permissions"
-            else:
-                final_status = "Status: Could not hear you"
-                
-            Clock.schedule_once(lambda dt: setattr(self.label, 'text', final_status))
-            self.speak("Sorry Sir, please check the connection.")
+            Clock.schedule_once(lambda dt: setattr(self.label, 'text', "Status: Mic Initializing..."))
+            print(f"Detail Error: {e}")
 
 if __name__ == '__main__':
     JarvisAI().run()
